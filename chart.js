@@ -1,370 +1,261 @@
-// GLOBALS
-var w = 1000,h = 900;
-var padding = 2;
-var nodes = [];
-var force, node, data, maxVal;
-var brake = 0.2;
-var radius = d3.scale.sqrt().range([10, 20]);
-
-var partyCentres = { 
-    con: { x: w / 3, y: h / 3.3}, 
-    lab: {x: w / 3, y: h / 2.3}, 
-    lib: {x: w / 3	, y: h / 1.8}
-  };
-
-var entityCentres = { 
-    company: {x: w / 3.65, y: h / 2.3},
-		union: {x: w / 3.65, y: h / 1.8},
-		other: {x: w / 1.15, y: h / 1.9},
-		society: {x: w / 1.12, y: h  / 3.2 },
-		pub: {x: w / 1.8, y: h / 2.8},
-		individual: {x: w / 3.65, y: h / 3.3},
-	};
-
-var fill = d3.scale.ordinal().range(["#F02233", "#087FBD", "#FDBB30"]);
-
-var svgCentre = { 
-    x: w / 3.6, y: h / 2
-  };
-
-var svg = d3.select("#chart").append("svg")
-	.attr("id", "svg")
-	.attr("width", w)
-	.attr("height", h);
-
-var nodeGroup = svg.append("g");
-
-var tooltip = d3.select("#chart")
- 	.append("div")
-	.attr("class", "tooltip")
-	.attr("id", "tooltip");
-
-var comma = d3.format(",.0f");
-
-function transition(name) {
-	if (name === "all-donations") {
-		$("#initial-content").fadeIn(250);
-		$("#value-scale").fadeIn(1000);
-		$("#view-donor-type").fadeOut(250);
-		$("#view-source-type").fadeOut(250);
-		$("#view-party-type").fadeOut(250);
-		return total();
-		//location.reload();
-	}
-	if (name === "group-by-party") {
-		$("#initial-content").fadeOut(250);
-		$("#value-scale").fadeOut(250);
-		$("#view-donor-type").fadeOut(250);
-		$("#view-source-type").fadeOut(250);
-		$("#view-party-type").fadeIn(1000);
-		return partyGroup();
-	}
-	if (name === "group-by-donor-type") {
-		$("#initial-content").fadeOut(250);
-		$("#value-scale").fadeOut(250);
-		$("#view-party-type").fadeOut(250);
-		$("#view-source-type").fadeOut(250);
-		$("#view-donor-type").fadeIn(1000);
-		return donorType();
-	}
-	if (name === "group-by-money-source")
-		$("#initial-content").fadeOut(250);
-		$("#value-scale").fadeOut(250);
-		$("#view-donor-type").fadeOut(250);
-		$("#view-party-type").fadeOut(250);
-		$("#view-source-type").fadeIn(1000);
-		return fundsType();
-	}
-
-function start() {
-
-	node = nodeGroup.selectAll("circle")
-		.data(nodes)
-	.enter().append("circle")
-		.attr("class", function(d) { return "node " + d.party; })
-		.attr("amount", function(d) { return d.value; })
-		.attr("donor", function(d) { return d.donor; })
-		.attr("entity", function(d) { return d.entity; })
-		.attr("party", function(d) { return d.party; })
-		// disabled because of slow Firefox SVG rendering
-		// though I admit I'm asking a lot of the browser and cpu with the number of nodes
-		//.style("opacity", 0.9)
-		.attr("r", 0)
-		.style("fill", function(d) { return fill(d.party); })
-		.on("mouseover", mouseover)
-		.on("mouseout", mouseout);
-		// Alternative title based 'tooltips'
-		// node.append("title")
-		//	.text(function(d) { return d.donor; });
-
-		force.gravity(0)
-			.friction(0.75)
-			.charge(function(d) { return -Math.pow(d.radius, 2) / 3; })
-			.on("tick", all)
-			.start();
-
-		node.transition()
-			.duration(2500)
-			.attr("r", function(d) { return d.radius; });
+body {
+    background-color: #ffffff;
+    font-family:'Raleway', 'Open Sans', sans-serif;
+}
+p {
+    margin: 5px 0;
+}
+strong {
+    font-weight: 700;
+}
+h1, h2, h3, h4, h5 {
+    margin: 10px 0 15px 0;
+}
+header, nav {
+    text-align: center;
+    min-width: 767px;
+}
+li {
+    display: inline;
 }
 
-function total() {
-
-	force.gravity(0)
-		.friction(0.9)
-		.charge(function(d) { return -Math.pow(d.radius, 2) / 2.8; })
-		.on("tick", all)
-		.start();
+/*  Information boxes for different chart layouts */
+/* Positioning */
+#initial-content, #a, #b, #c, #d, #e, #f, #view-party-type, #view-donor-type, #view-source-type, #partyInfo, #conservative, #labour, #libdem, #individual, #company, #union, #society, #other, #public-or-private-money, #public-or-private-money-split, #private-money, #public-money { 
+    position: absolute; 
 }
 
-function partyGroup() {
-	force.gravity(0)
-		.friction(0.8)
-		.charge(function(d) { return -Math.pow(d.radius, 2.0) / 3; })
-		.on("tick", parties)
-		.start()
-		.colourByParty();
+/* Initial appearance on load */
+#view-party-type, #view-donor-type, #view-source-type, #view-amount-type {
+    display: none;
 }
 
-function donorType() {
-	force.gravity(0)
-		.friction(0.8)
-		.charge(function(d) { return -Math.pow(d.radius, 2.0) / 3; })
-		.on("tick", entities)
-		.start();
+/* View containers */
+#initial-content, #view-source-type {
+    left: 650px;
+    width: 400px;
+}
+#view-party-type {
+    left: 650px;
+    width: 272px;
 }
 
-function fundsType() {
-	force.gravity(0)
-		.friction(0.75)
-		.charge(function(d) { return -Math.pow(d.radius, 2.0) / 3; })
-		.on("tick", types)
-		.start();
+/*  Public or private funds view */
+
+#public-or-private-money {
+    max-width: 300px;
+}
+#public-or-private-money-split {
+    top: 550px;
+    left: -600px;
+    text-align: center;   
+}
+#private-money, #public-money {
+    width: 200px;
+}
+#private-money {
+    left: 200px;
+}
+#public-money {
+    left: 610px;
 }
 
-function parties(e) {
-	node.each(moveToParties(e.alpha));
-
-		node.attr("cx", function(d) { return d.x; })
-			.attr("cy", function(d) {return d.y; });
+/*  Party view */
+#conservative, #labour, #libdem { padding: 10px; }
+#conservative {
+    background: rgba(255, 0, 0, 1);
+    top: 110px;
+}
+#labour {
+    background: rgba(255, 255, 204, 1);
+    top: 330px;
+}
+#libdem {
+    background: rgba(120, 120, 120, 1);
+    top: 550px;
 }
 
-function entities(e) {
-	node.each(moveToEnts(e.alpha));
-
-		node.attr("cx", function(d) { return d.x; })
-			.attr("cy", function(d) {return d.y; });
+/*  Donor type layout */
+#view-donor-type {
+    height: 100%;
+    left: 500px;
+    width: 370px;
+    
+}
+#individual {
+    top: 55px;
+}
+#company {
+    top: 390px;
+}
+#union {
+    top: 660px;
+}
+#society {
+    top: 205px;
+    text-align: right;
+    right: 0;
+}
+#other {
+    top: 530px;
+    text-align: right;
+    right: 0
 }
 
-function types(e) {
-	node.each(moveToFunds(e.alpha));
-
-
-		node.attr("cx", function(d) { return d.x; })
-			.attr("cy", function(d) {return d.y; });
+/* position of new text of new split by */
+#first {
+   left: 120px;
+    top: 140px;
+position: absolute;
+}
+#second{
+    left: 550px;
+    top: 140px;
+position: absolute; 
+}
+#third {
+   left: 120px;
+    top: 500px;
+position: absolute;
+}
+#last {
+    left: 550px;
+    top: 500px;
+position: absolute; 
 }
 
-function all(e) {
-	node.each(moveToCentre(e.alpha))
-		.each(collide(0.001));
+/* Value scale */
 
-		node.attr("cx", function(d) { return d.x; })
-			.attr("cy", function(d) {return d.y; });
+#value-scale {
+    opacity: 0.5;
+    font-size: 0.75em;
+}
+#a, #b, #c, #d, #e { left: 40px; }
+#a { top: 635px;}
+#b { top: 585px;}
+#c { top: 535px;}
+#d { top: 485px;}
+#e { top: 435px;}
+#f { top: 648px; left: 575px; }
+
+/* End of view */
+
+circle {
+    stroke: rgba(238, 238, 238, 1);
+    stroke-width: 0.5;
+}
+circle.active {
+    stroke: rgba(17, 17, 17, 0.8);
+    stroke-width: 5;
 }
 
-
-function moveToCentre(alpha) {
-	return function(d) {
-		var centreX = svgCentre.x + 75;
-			if (d.value <= 25001) {
-				centreY = svgCentre.y + 75;
-			} else if (d.value <= 50001) {
-				centreY = svgCentre.y + 55;
-			} else if (d.value <= 100001) {
-				centreY = svgCentre.y + 35;
-			} else  if (d.value <= 500001) {
-				centreY = svgCentre.y + 15;
-			} else  if (d.value <= 1000001) {
-				centreY = svgCentre.y - 5;
-			} else  if (d.value <= maxVal) {
-				centreY = svgCentre.y - 25;
-			} else {
-				centreY = svgCentre.y;
-			}
-
-		d.x += (centreX - d.x) * (brake + 0.06) * alpha * 1.2;
-		d.y += (centreY - 100 - d.y) * (brake + 0.06) * alpha * 1.2;
-	};
+.legend circle {
+    stroke: #aabbcc;
+    stroke-width: 1;
+    fill: none;
 }
-
-function moveToParties(alpha) {
-	return function(d) {
-		var centreX = partyCentres[d.party].x + 50;
-		if (d.entity === 'pub') {
-			centreX = 1200;
-		} else {
-			centreY = partyCentres[d.party].y;
-		}
-
-		d.x += (centreX - d.x) * (brake + 0.02) * alpha * 1.1;
-		d.y += (centreY - d.y) * (brake + 0.02) * alpha * 1.1;
-	};
+.tooltip {
+    margin: 0;
+    padding: 5px;
+    line-height: 1.4;
+    display: none;
+    height: 125px;
+    width: 280px;
+    text-align: left;
+    border: 4px solid rgba(0, 0, 0, .8);
+    border-radius: 2px;
+    -moz-box-shadow: 1px 2px 1px rgba(0, 0, 0, 0.5);
+    -webkit-box-shadow: 1px 2px 1px rgba(0, 0, 0, 0.5);
+    box-shadow: 1px 2px 1px rgba(0, 0, 0, 0.5);
+    background-color: rgba(255, 255, 255, 1);
+    position: absolute;
 }
-
-function moveToEnts(alpha) {
-	return function(d) {
-		var centreY = entityCentres[d.entity].y;
-		if (d.entity === 'pub') {
-			centreX = 1200;
-		} else {
-			centreX = entityCentres[d.entity].x;
-		}
-
-		d.x += (centreX - d.x) * (brake + 0.02) * alpha * 1.1;
-		d.y += (centreY - d.y) * (brake + 0.02) * alpha * 1.1;
-	};
+.tooltip p, h3 {
+    margin: 0.2em;
 }
-
-function moveToFunds(alpha) {
-	return function(d) {
-		var centreY = entityCentres[d.entity].y;
-		var centreX = entityCentres[d.entity].x;
-		if (d.entity !== 'pub') {
-			centreY = 300;
-			centreX = 350;
-		} else {
-			centreX = entityCentres[d.entity].x + 60;
-			centreY = 380;
-		}
-		d.x += (centreX - d.x) * (brake + 0.02) * alpha * 1.1;
-		d.y += (centreY - d.y) * (brake + 0.02) * alpha * 1.1;
-	};
+.lab {
+    fill: #F02233;
 }
-
-// Collision detection function by m bostock
-function collide(alpha) {
-  var quadtree = d3.geom.quadtree(nodes);
-  return function(d) {
-    var r = d.radius + radius.domain()[1] + padding,
-        nx1 = d.x - r,
-        nx2 = d.x + r,
-        ny1 = d.y - r,
-        ny2 = d.y + r;
-    quadtree.visit(function(quad, x1, y1, x2, y2) {
-      if (quad.point && (quad.point !== d)) {
-        var x = d.x - quad.point.x,
-            y = d.y - quad.point.y,
-            l = Math.sqrt(x * x + y * y),
-            r = d.radius + quad.point.radius + (d.color !== quad.point.color) * padding;
-        if (l < r) {
-          l = (l - r) / l * alpha;
-          d.x -= x *= l;
-          d.y -= y *= l;
-          quad.point.x += x;
-          quad.point.y += y;
-        }
-      }
-      return x1 > nx2
-          || x2 < nx1
-          || y1 > ny2
-          || y2 < ny1;
-    });
-  };
+.lib {
+    fill: #FDBB30;
 }
-
-function display(data) {
-
-	maxVal = d3.max(data, function(d) { return d.amount; });
-
-	var radiusScale = d3.scale.sqrt()
-		.domain([0, maxVal])
-			.range([10, 20]);
-
-	data.forEach(function(d, i) {
-		var y = radiusScale(d.amount);
-		var node = {
-				radius: radiusScale(d.amount) / 5,
-				value: d.amount,
-				donor: d.donor,
-				party: d.party,
-				partyLabel: d.partyname,
-				entity: d.entity,
-				entityLabel: d.entityname,
-				color: d.color,
-				x: Math.random() * w,
-				y: -y
-      };
-			
-      nodes.push(node)
-	});
-
-	console.log(nodes);
-
-	force = d3.layout.force()
-		.nodes(nodes)
-		.size([w, h]);
-
-	return start();
+.con {
+    fill: #087FBD;
 }
-
-function mouseover(d, i) {
-	// tooltip popup
-	var mosie = d3.select(this);
-	var amount = mosie.attr("amount");
-	var donor = d.donor;
-	var party = d.partyLabel;
-	var entity = d.entityLabel;
-	var offset = $("svg").offset();
-	
-
-
-	// image url that want to check
-	var imageFile = "https://raw.githubusercontent.com/ioniodi/D3js-uk-political-donations/master/photos/" + donor + ".ico";
-
-	
-	
-	// *******************************************
-	
-	
-	
-
-	
-
-	
-	var infoBox = "<p> Source: <b>" + donor + "</b> " +  "<span><img src='" + imageFile + "' height='42' width='42' onError='this.src=\"https://github.com/favicon.ico\";'></span></p>" 	
-	
-	 							+ "<p> Recipient: <b>" + party + "</b></p>"
-								+ "<p> Type of donor: <b>" + entity + "</b></p>"
-								+ "<p> Total value: <b>&#163;" + comma(amount) + "</b></p>";
-	
-	
-	mosie.classed("active", true);
-	d3.select(".tooltip")
-  	.style("left", (parseInt(d3.select(this).attr("cx") - 80) + offset.left) + "px")
-    .style("top", (parseInt(d3.select(this).attr("cy") - (d.radius+150)) + offset.top) + "px")
-		.html(infoBox)
-			.style("display","block");
-	
-	
-	}
-
-function mouseout() {
-	// no more tooltips
-		var mosie = d3.select(this);
-
-		mosie.classed("active", false);
-
-		d3.select(".tooltip")
-			.style("display", "none");
-		}
-
-$(document).ready(function() {
-		d3.selectAll(".switch").on("click", function(d) {
-      var id = d3.select(this).attr("id");
-      return transition(id);
-    });
-    return d3.csv("data/7500up.csv", display);
-
-});
-
+.snp {
+    fill: #C9C945;
+}
+/*!
+Pure v0.2.1
+Copyright 2013 Yahoo! Inc. All rights reserved.
+Licensed under the BSD License.
+https://github.com/yui/pure/blob/master/LICENSE.md
+*/
+.pure-button {
+    /* Structure */
+    display: inline-block;
+    *display: inline;
+    /*IE 6/7*/
+    zoom: 1;
+    line-height: normal;
+    white-space: nowrap;
+    vertical-align: baseline;
+    text-align: center;
+    cursor: pointer;
+    -webkit-user-drag: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+/* Firefox: Get rid of the inner focus border */
+.pure-button::-moz-focus-inner {
+    padding: 0;
+    border: 0;
+}
+/*csslint unqualified-attributes:false, outline-none:false*/
+.pure-button {
+    font-size: 100%;
+    *font-size: 90%;
+    /*IE 6/7 - To reduce IE's oversized button text*/
+    *overflow: visible;
+    /*IE 6/7 - Because of IE's overly large left/right padding on buttons */
+    padding: 0.5em 1.5em 0.5em;
+    color: #444;
+    /* rgba not supported (IE 8) */
+    color: rgba(0, 0, 0, 0.80);
+    /* rgba supported */
+    *color: #444;
+    /* IE 6 & 7 */
+    border: 1px solid #999;
+    /*IE 6/7/8*/
+    border: none rgba(0, 0, 0, 0);
+    /*IE9 + everything else*/
+    background-color: #E6E6E6;
+    text-decoration: none;
+    border-radius: 2px;
+    -webkit-font-smoothing: antialiased;
+    /* Transitions */
+    -webkit-transition: 0.1s linear -webkit-box-shadow;
+    -moz-transition: 0.1s linear -moz-box-shadow;
+    -ms-transition: 0.1s linear box-shadow;
+    -o-transition: 0.1s linear box-shadow;
+    transition: 0.1s linear box-shadow;
+}
+.pure-button-hover, .pure-button:hover, .pure-button:focus {
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00000000', endColorstr='#1a000000', GradientType=0);
+    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(transparent), color-stop(40%, rgba(0, 0, 0, 0.05)), to(rgba(0, 0, 0, 0.10)));
+    background-image: -webkit-linear-gradient(transparent, rgba(0, 0, 0, 0.05) 40%, rgba(0, 0, 0, 0.10));
+    background-image: -moz-linear-gradient(top, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.10));
+    background-image: -ms-linear-gradient(transparent, rgba(0, 0, 0, 0.05) 40%, rgba(0, 0, 0, 0.10));
+    background-image: -o-linear-gradient(transparent, rgba(0, 0, 0, 0.05) 40%, rgba(0, 0, 0, 0.10));
+    background-image: linear-gradient(transparent, rgba(0, 0, 0, 0.05) 40%, rgba(0, 0, 0, 0.10));
+}
+.pure-button:focus {
+    outline: 0;
+}
+.pure-button-active, .pure-button:active {
+    color: rgb(0, 120, 231);
+    color: #fff
+}
 
