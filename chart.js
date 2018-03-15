@@ -268,7 +268,7 @@ function moveToAmount(alpha) {
 				
 		} else{
 			    centreX = 700;
-                centreY = 600;
+                            centreY = 600;
 	        }
 
 		d.x += (centreX - d.x) * (brake + 0.06) * alpha * 1.2;
