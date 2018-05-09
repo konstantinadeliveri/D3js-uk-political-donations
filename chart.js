@@ -414,13 +414,12 @@ function mouseover(d, i) {
         window.speechSynthesis.speak(voice);
 	
 
-//Add Image Bar	
+//Add Picture Bar	
 var infoPic = document.createElement("img");
-   element.src = imageFile; 
    element.setAttribute("height", "42");
    element.setAttribute("width", "42");
-document.getElementById("Pic-bar").appendChild(element); 
-	
+document.getElementById("Pic-bar").insertBefore(infoPic,document.getElementById("Pic-bar").firstChild);
+element.src = imageFile;
 	}
 
 function mouseout() {
