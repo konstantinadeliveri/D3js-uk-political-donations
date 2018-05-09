@@ -414,13 +414,13 @@ function mouseover(d, i) {
         window.speechSynthesis.speak(voice);
 	
 
-//Add Picture Bar	
-var img = document.createElement("img");
-   img.src = imageFile;
-   img.setAttribute("height", "42");
-   img.setAttribute("width", "42");
-document.getElementById("Pic-bar").appendChild(img);
-	}
+     //Add Picture Bar	
+        var img = document.createElement("img");
+            img.src = imageFile;
+            img.setAttribute("height", "42");
+            img.setAttribute("width", "42");
+        document.getElementById("Pic-bar").appendChild(img);
+}
 
 function mouseout() {
 	// no more tooltips
