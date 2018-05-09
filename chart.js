@@ -416,9 +416,9 @@ function mouseover(d, i) {
 
 //Add Picture Bar	
 var img = document.createElement("img");
+   img.src = imageFile;
    img.setAttribute("height", "42");
    img.setAttribute("width", "42");
-   img.src = imageFile;
 document.getElementById("Pic-bar").appendChild(img);
 	}
 
