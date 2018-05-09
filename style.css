@@ -143,10 +143,10 @@ position: absolute;
 #Pic-bar {
    
     position: absolute;
-    left: 1045px;
-    width: 288px;
-    height: 42px;
-    top: 106px;
+    right: 50px;
+    width: 90px;
+    height: absolute;
+    top: 135px;
     border: 5px solid orange;
 }
 
