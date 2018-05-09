@@ -415,11 +415,11 @@ function mouseover(d, i) {
 	
 
 //Add Picture Bar	
-var infoPic = document.createElement("img");
-   infoPic.setAttribute("height", "42");
-   infoPic.setAttribute("width", "42");
-   infoPic.src = imageFile;
-document.getElementById("Pic-bar").appendChild(infoPic);
+var img = document.createElement("img");
+   img.setAttribute("height", "42");
+   img.setAttribute("width", "42");
+   img.src = imageFile;
+document.getElementById("Pic-bar").appendChild(img);
 	}
 
 function mouseout() {
