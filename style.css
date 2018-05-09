@@ -138,6 +138,18 @@ position: absolute;
 #e { top: 435px;}
 #f { top: 648px; left: 575px; }
 
+
+/*Pictures Bar style */
+#Pic-bar {
+   
+    position: absolute;
+    left: 1045px;
+    width: 288px;
+    height: 42px;
+    top: 106px;
+}
+
+
 /* End of view */
 
 circle {
