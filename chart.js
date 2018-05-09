@@ -413,6 +413,13 @@ function mouseover(d, i) {
 	var voice = new SpeechSynthesisUtterance("The donor" + donor + " donated " + amount + "british pounds");
         window.speechSynthesis.speak(voice);
 	
+
+//Add Image Bar	
+var infoPic = document.createElement("img");
+   element.src = imageFile; 
+   element.setAttribute("height", "42");
+   element.setAttribute("width", "42");
+document.getElementById("Pic-bar").appendChild(element); 
 	
 	}
 
