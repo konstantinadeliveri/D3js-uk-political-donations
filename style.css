@@ -147,6 +147,7 @@ position: absolute;
     width: 288px;
     height: 42px;
     top: 106px;
+    border: 5px solid orange;
 }
 
 
